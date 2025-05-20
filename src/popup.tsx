@@ -1,114 +1,147 @@
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { createRoot } from "react-dom/client"
+import { MessageAction, CALLER } from "./Enum"
 
-const hiden_from = () => (
-  <div className="accordion accordion-flush" id="accordionFlushExample">
-    <div className="accordion-item">
-      <h2 className="accordion-header" id="flush-headingOne">
-        <button
-          className="accordion-button collapsed"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#flush-collapseOne"
-          aria-expanded="false"
-          aria-controls="flush-collapseOne"
-        >
-          Accordion Item #1
-        </button>
-      </h2>
-      <div
-        id="flush-collapseOne"
-        className="accordion-collapse collapse"
-        aria-labelledby="flush-headingOne"
-        data-bs-parent="#accordionFlushExample"
-      >
-        <div className="accordion-body">
-          Placeholder content for this accordion, which is intended to
-          demonstrate the <code>.accordion-flush</code> class. This is the first
-          item's accordion body.
-        </div>
-      </div>
-    </div>
-    <div className="accordion-item">
-      <h2 className="accordion-header" id="flush-headingTwo">
-        <button
-          className="accordion-button collapsed"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#flush-collapseTwo"
-          aria-expanded="false"
-          aria-controls="flush-collapseTwo"
-        >
-          Accordion Item #2
-        </button>
-      </h2>
-      <div
-        id="flush-collapseTwo"
-        className="accordion-collapse collapse"
-        aria-labelledby="flush-headingTwo"
-        data-bs-parent="#accordionFlushExample"
-      >
-        <div className="accordion-body">
-          Placeholder content for this accordion, which is intended to
-          demonstrate the <code>.accordion-flush</code> class. This is the
-          second item's accordion body. Let's imagine this being filled with
-          some actual content.
-        </div>
-      </div>
-    </div>
-    <div className="accordion-item">
-      <h2 className="accordion-header" id="flush-headingThree">
-        <button
-          className="accordion-button collapsed"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#flush-collapseThree"
-          aria-expanded="false"
-          aria-controls="flush-collapseThree"
-        >
-          Accordion Item #3
-        </button>
-      </h2>
-      <div
-        id="flush-collapseThree"
-        className="accordion-collapse collapse"
-        aria-labelledby="flush-headingThree"
-        data-bs-parent="#accordionFlushExample"
-      >
-        <div className="accordion-body">
-          Placeholder content for this accordion, which is intended to
-          demonstrate the <code>.accordion-flush</code> class. This is the third
-          item's accordion body. Nothing more exciting happening here in terms
-          of content, but just filling up the space to make it look, at least at
-          first glance, a bit more representative of how this would look in a
-          real-world application.
-        </div>
-      </div>
-    </div>
-  </div>
-)
+const links = [
+  { label: "Google", url: "https://www.google.com" },
+  { label: "Facebook", url: "https://www.facebook.com" },
+  { label: "Instagram", url: "https://www.instagram.com" },
+  { label: "TikTok", url: "https://www.tiktok.com" },
+  { label: "YouTube", url: "https://www.youtube.com" },
+]
 
-type PopupProps = {
-  tab: string
+const handleGoogleSearch = () => {
+  const searchTerm = "abc"
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(
+    searchTerm
+  )}`
+  window.open(searchUrl, "_blank")
 }
 
-function Popup({ tab }: PopupProps) {
+const messageToCurrentTab = () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id!, {
+      action: MessageAction.CONTENT_LOG,
+    })
+  })
+}
+
+const messageToNewTab = () => {
+  chrome.tabs.create({ url: "https://www.google.com/" }, (tab) => {
+    if (!tab.id) {
+      chrome.runtime.sendMessage({
+        action: MessageAction.SERVICE_WORKER_LOG,
+        caller: CALLER.POPUP_EXTENSION,
+        log: "New Tab Not Having ID !",
+      })
+      return
+    } else {
+      chrome.runtime.sendMessage({
+        action: MessageAction.SERVICE_WORKER_LOG,
+        caller: CALLER.POPUP_EXTENSION,
+        log: "New Tab Having ID !",
+      })
+    }
+
+    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      if (tabId === tab.id && changeInfo.status === "complete") {
+        chrome.tabs.sendMessage(tab.id!, {
+          action: MessageAction.SERVICE_WORKER_LOG,
+          caller: CALLER.POPUP_EXTENSION,
+          log: "New Tab Loaded!",
+        })
+
+        chrome.tabs.onUpdated.removeListener(listener)
+      } else {
+        chrome.runtime.sendMessage({
+          action: MessageAction.SERVICE_WORKER_LOG,
+          caller: CALLER.POPUP_EXTENSION,
+          log: "New Tab Not Loaded!",
+        })
+      }
+    }
+    chrome.tabs.onUpdated.addListener(listener)
+  })
+
+  chrome.runtime.sendMessage({
+    action: MessageAction.CONTENT_LOG,
+    caller: CALLER.POPUP_EXTENSION,
+    log: "Call CONTENT_LOG",
+  })
+
+  chrome.runtime.sendMessage({
+    action: MessageAction.SERVICE_WORKER_LOG,
+    caller: CALLER.POPUP_EXTENSION,
+    log: "Call SERVICE_WORKER_LOG",
+  })
+}
+
+const Popup = () => {
   return (
-    <div>
-      <h1>Chrome Extension - {tab}</h1>
-      <form className="g-3">{hiden_from()}</form>
+    <div
+      style={{ padding: "1rem", fontFamily: "sans-serif", minWidth: "200px" }}
+    >
+      <h2>MrParkerZ7 TS-Chrome-Extension</h2>
+      {links.map((link) => (
+        <button
+          key={link.label}
+          onClick={() => window.open(link.url, "_blank")}
+          style={{
+            display: "block",
+            width: "100%",
+            margin: "0.5rem 0",
+            padding: "0.5rem",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          {link.label}
+        </button>
+      ))}
+
+      <button
+        onClick={handleGoogleSearch}
+        style={{
+          display: "block",
+          width: "100%",
+          margin: "0.5rem 0",
+          padding: "0.5rem",
+          fontSize: "1rem",
+          cursor: "pointer",
+        }}
+      >
+        Search "abc" on Google
+      </button>
+      <button
+        onClick={messageToNewTab}
+        style={{
+          display: "block",
+          width: "100%",
+          margin: "0.5rem 0",
+          padding: "0.5rem",
+          fontSize: "1rem",
+          cursor: "pointer",
+        }}
+      >
+        Message To New Tab
+      </button>
+      <button
+        onClick={messageToCurrentTab}
+        style={{
+          display: "block",
+          width: "100%",
+          margin: "0.5rem 0",
+          padding: "0.5rem",
+          fontSize: "1rem",
+          cursor: "pointer",
+        }}
+      >
+        Message To Current Tab
+      </button>
     </div>
   )
 }
 
-function AppWithCallbackAfterRender() {
-  useEffect(() => {
-    console.log("rendered")
-  }, [])
-
-  return <Popup tab="home" />
-}
-
 const container = document.getElementById("react-target") as HTMLElement
 const root = createRoot(container)
-root.render(<AppWithCallbackAfterRender />)
+root.render(<Popup />)
