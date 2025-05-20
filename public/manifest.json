@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "TS Content Extension",
+  "description": "TS Content Extension",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "version": "1.0",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "windows",
+    "scripting",
+    "webRequest"
+  ],
+  "host_permissions": ["<all_urls>"]
+}
