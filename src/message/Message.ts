@@ -1,11 +1,11 @@
-import { MessageAction, Caller } from "../constant/Enum"
+import { MessageAction, Service } from "../constant/Enum"
 
 export class Message {
   action: MessageAction
-  caller: Caller
+  caller: Service
   log: string | undefined
 
-  constructor (action: MessageAction, caller: Caller, log: string) {
+  constructor (action: MessageAction, caller: Service, log: string) {
     this.action = action
     this.caller = caller
     this.log = log

@@ -3,7 +3,7 @@ export enum MessageAction {
   CONTENT_LOG = "CONTENT_LOG",
 }
 
-export enum Caller {
+export enum Service {
   SERVICE_WORKER = "SERVICE_WORKER",
   CONTENT_SCRIPT = "CONTENT_SCRIPT",
   POPUP_EXTENSION = "POPUP_EXTENSION",

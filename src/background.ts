@@ -1,5 +1,5 @@
 import { Message } from "message/Message";
-import { MessageAction, Caller } from "./constant/Enum"
+import { MessageAction, Service } from "./constant/Enum"
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed!");

@@ -1,6 +1,6 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
-import { MessageAction, Caller } from "./constant/Enum"
+import { MessageAction, Service } from "./constant/Enum"
 import { MessageBuilder } from "./message/MessageBuilder"
 
 const links = [
@@ -11,7 +11,7 @@ const links = [
   { label: "YouTube", url: "https://www.youtube.com" },
 ]
 
-const msgPopUp = new MessageBuilder(Caller.POPUP_EXTENSION)
+const msgPopUp = new MessageBuilder(Service.POPUP_EXTENSION)
 
 const messageToCurrentTab = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -28,6 +28,14 @@ const messageToCurrentTab = () => {
         log: "Message to current tab not found tabId",
       })
     }
+  })
+}
+
+const messageLogCurrentTabURL = () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tabId = tabs[0].id
+
+    msgPopUp.getTabUrlLogSW(tabId!)
   })
 }
 
@@ -124,6 +132,19 @@ const Popup = () => {
         }}
       >
         Message To Current Tab
+      </button>
+      <button
+        onClick={messageLogCurrentTabURL}
+        style={{
+          display: "block",
+          width: "100%",
+          margin: "0.5rem 0",
+          padding: "0.5rem",
+          fontSize: "1rem",
+          cursor: "pointer",
+        }}
+      >
+        Message To Current Tab URL
       </button>
     </div>
   )

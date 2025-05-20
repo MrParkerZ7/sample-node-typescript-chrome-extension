@@ -1,13 +1,5 @@
-import { Caller, MessageAction } from "constant/Enum"
+import { Service, MessageAction } from "../constant/Enum"
 import { Message } from "./Message"
-
-export function sendMessage(message: Message) {
-  chrome.runtime.sendMessage(message)
-}
-
-export function sendTabMessage(tabId: number, message: Message) {
-  chrome.tabs.sendMessage(tabId, message)
-}
 
 export interface MessageI {
   action: MessageAction
@@ -19,9 +11,9 @@ export interface MessageTabI extends MessageI {
 }
 
 export class MessageBuilder {
-  caller: Caller
+  caller: Service
 
-  constructor (caller: Caller) {
+  constructor (caller: Service) {
     this.caller = caller
   }
 
@@ -31,5 +23,24 @@ export class MessageBuilder {
 
   sendTabMessage(msg: MessageTabI) {
     chrome.tabs.sendMessage(msg.tabId, new Message(msg.action, this.caller, msg.log))
+  }
+
+  getTabUrlLogSW(tabId: number) {
+    chrome.tabs.get(tabId, (tab) => {
+      const url = tab?.url
+
+      if (!url) {
+        this.sendMessage({
+          action: MessageAction.SERVICE_WORKER_LOG,
+          log: `Tab ID ${tabId} has no URL or tab not found`
+        })
+        return
+      }
+
+      this.sendMessage({
+        action: MessageAction.SERVICE_WORKER_LOG,
+        log: `Tab ID ${tabId} has URL: ${url}`
+      })
+    })
   }
 }
