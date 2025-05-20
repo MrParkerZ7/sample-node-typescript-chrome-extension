@@ -1,6 +1,7 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
-import { MessageAction, CALLER } from "./Enum"
+import { MessageAction, Caller } from "./constant/Enum"
+import { MessageBuilder } from "./message/MessageBuilder"
 
 const links = [
   { label: "Google", url: "https://www.google.com" },
@@ -10,52 +11,53 @@ const links = [
   { label: "YouTube", url: "https://www.youtube.com" },
 ]
 
-const handleGoogleSearch = () => {
-  const searchTerm = "abc"
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(
-    searchTerm
-  )}`
-  window.open(searchUrl, "_blank")
-}
+const msgPopUp = new MessageBuilder(Caller.POPUP_EXTENSION)
 
 const messageToCurrentTab = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(tabs[0].id!, {
-      action: MessageAction.CONTENT_LOG,
-    })
+    const tabId = tabs[0].id
+    if (tabId) {
+      msgPopUp.sendTabMessage({
+        tabId,
+        action: MessageAction.CONTENT_LOG,
+        log: "Message to current tab",
+      })
+    } else {
+      msgPopUp.sendMessage({
+        action: MessageAction.SERVICE_WORKER_LOG,
+        log: "Message to current tab not found tabId",
+      })
+    }
   })
 }
 
 const messageToNewTab = () => {
   chrome.tabs.create({ url: "https://www.google.com/" }, (tab) => {
     if (!tab.id) {
-      chrome.runtime.sendMessage({
+      msgPopUp.sendMessage({
         action: MessageAction.SERVICE_WORKER_LOG,
-        caller: CALLER.POPUP_EXTENSION,
         log: "New Tab Not Having ID !",
       })
       return
     } else {
-      chrome.runtime.sendMessage({
+      msgPopUp.sendMessage({
         action: MessageAction.SERVICE_WORKER_LOG,
-        caller: CALLER.POPUP_EXTENSION,
         log: "New Tab Having ID !",
       })
     }
 
     const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
       if (tabId === tab.id && changeInfo.status === "complete") {
-        chrome.tabs.sendMessage(tab.id!, {
+        msgPopUp.sendTabMessage({
+          tabId,
           action: MessageAction.SERVICE_WORKER_LOG,
-          caller: CALLER.POPUP_EXTENSION,
-          log: "New Tab Loaded!",
+          log: "New Tab Loaded! " + tabId,
         })
 
         chrome.tabs.onUpdated.removeListener(listener)
       } else {
-        chrome.runtime.sendMessage({
+        msgPopUp.sendMessage({
           action: MessageAction.SERVICE_WORKER_LOG,
-          caller: CALLER.POPUP_EXTENSION,
           log: "New Tab Not Loaded!",
         })
       }
@@ -63,16 +65,14 @@ const messageToNewTab = () => {
     chrome.tabs.onUpdated.addListener(listener)
   })
 
-  chrome.runtime.sendMessage({
+  msgPopUp.sendMessage({
     action: MessageAction.CONTENT_LOG,
-    caller: CALLER.POPUP_EXTENSION,
-    log: "Call CONTENT_LOG",
+    log: "Popup Message",
   })
 
-  chrome.runtime.sendMessage({
+  msgPopUp.sendMessage({
     action: MessageAction.SERVICE_WORKER_LOG,
-    caller: CALLER.POPUP_EXTENSION,
-    log: "Call SERVICE_WORKER_LOG",
+    log: "Popup Message",
   })
 }
 
@@ -99,19 +99,6 @@ const Popup = () => {
         </button>
       ))}
 
-      <button
-        onClick={handleGoogleSearch}
-        style={{
-          display: "block",
-          width: "100%",
-          margin: "0.5rem 0",
-          padding: "0.5rem",
-          fontSize: "1rem",
-          cursor: "pointer",
-        }}
-      >
-        Search "abc" on Google
-      </button>
       <button
         onClick={messageToNewTab}
         style={{
